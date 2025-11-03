@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rift Survivors - Split Screen</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111;
+            color: white;
+            font-family: sans-serif;
+        }
+        #game-container {
+            display: flex;
+        }
+        #game-container.hidden {
+            display: none;
+        }
+        #duel-container.hidden {
+            display: none;
+        }
+        .canvas-wrapper {
+            position: relative;
+            border: 2px solid #fff; /* 각 래퍼에 테두리 추가 */
+        }
+        .canvas-wrapper + .canvas-wrapper {
+            border-left: none; /* 왼쪽 래퍼와 겹치는 테두리 제거 */
+        }
+        .info-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        canvas {
+            background-color: #222;
+            display: block; /* canvas 아래 작은 여백 제거 */
+        }
+
+        /* --- Shop UI Styles --- */
+        #shop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: sans-serif;
+        }
+        #shop-overlay.hidden {
+            display: none;
+        }
+        #shop-container {
+            background-color: #1a1a1a;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            min-height: 400px;
+        }
+        #shop-container h2 {
+            margin-top: 0;
+            color: gold;
+            text-align: center;
+        }
+
+        /* --- Opening UI Styles --- */
+        #opening-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #opening-overlay.hidden {
+            display: none;
+        }
+        #opening-overlay h1 {
+            font-size: 48px;
+            color: gold;
+        }
+        .start-button, .faction-button {
+            font-size: 24px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            cursor: pointer;
+            background-color: #333;
+            border: 2px solid #aaa;
+            color: white;
+            border-radius: 5px;
+        }
+        .start-button:hover, .faction-button:hover {
+            background-color: #555;
+            border-color: white;
+        }
+        #faction-select-container {
+            display: flex;
+            gap: 40px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-view">
+        <div id="game-container"> <!-- Laning Phase Container -->
+        <!-- Player's Screen -->
+        <div class="canvas-wrapper">
+            <canvas id="playerCanvas" width="640" height="720"></canvas>
+        </div>
+        <!-- AI's Screen -->
+        <div class="canvas-wrapper">
+            <canvas id="aiCanvas" width="640" height="720"></canvas>
+        </div>
+        </div>
+        <div id="duel-container" class="hidden"> <!-- Duel Phase Container -->
+            <canvas id="duelCanvas" width="1280" height="720" style="border: 2px solid gold;"></canvas>
+        </div>
+    </div>
+
+    <!-- Opening Screen -->
+    <div id="opening-overlay">
+        <div id="title-screen">
+            <h1>Rift Survivors</h1>
+            <button id="start-game-button" class="start-button">Game Start</button>
+        </div>
+        <div id="name-input-screen" class="hidden">
+            <h2>Enter Your Name</h2>
+            <input type="text" id="player-name-input" maxlength="12" style="font-size: 20px; padding: 10px; text-align: center;">
+        </div>
+        <div id="faction-select-screen" class="hidden">
+            <h2>Choose Your Faction</h2>
+            <div id="faction-select-container">
+                <button class="faction-button" data-faction="light">Light Faction</button>
+                <button class="faction-button" data-faction="dark">Dark Faction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop UI Overlay -->
+    <div id="shop-overlay" class="hidden">
+        <div id="shop-container">
+            <!-- Shop content will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
