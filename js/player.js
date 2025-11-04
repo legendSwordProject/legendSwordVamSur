@@ -1,6 +1,19 @@
-import { AoeSkill, ProjectileSkill, DashSkill } from './skills.js';
+import { AoeSkill, ProjectileSkill, DashSkill, PassiveHpSkill } from './skills.js';
 import { OrbitingSphere, EightWayShot } from './autoAttacks.js';
+import { Armor } from './items.js';
 import { keys, gameState } from './main.js';
+
+const imageCache = {};
+function loadImage(src) {
+    if (!src) return null;
+    if (imageCache[src]) {
+        return imageCache[src];
+    }
+    const img = new Image();
+    img.src = src;
+    imageCache[src] = img;
+    return img;
+}
 
 export class Player {
     constructor(x, y, color, world, name) {
@@ -14,13 +27,15 @@ export class Player {
         this.name = name;
         this.isPlayerControlled = world.isPlayerWorld; // 자신이 플레이어인지 기억
 
-        this.maxHp = 100;
+        this.baseMaxHp = 100;
+        this.maxHp = this.baseMaxHp;
         this.hp = this.maxHp;
         this.respawnTimer = 0;
         this.stunTimer = 0;
         this.isInvincible = false;
         this.invincibilityTimer = 0;
 
+        this.defense = 0;
         // 넉백 상태 변수
         this.knockbackTimer = 0;
         this.knockbackForce = 0;
@@ -40,15 +55,21 @@ export class Player {
 
         this.skills = {
             'q': new AoeSkill(this, 5, 'Q', 'Blast', 100, 10),
-            'w': new ProjectileSkill(this, 0.5, 'W', 'Shot', 400, 5),
+            'w': new ProjectileSkill(this, 1, 'W', 'Shot', 1300, 5),
             'e': new DashSkill(this, 8, 'E', 'Dash', 1200, 0.15),
+            'r': new PassiveHpSkill(this, 'R', 'Toughness', 5),
         };
 
         this.availableAutoAttacks = {
             'orbitingSphere': new OrbitingSphere(this),
             'eightWayShot': new EightWayShot(this),
         };
+        this.availableItems = {
+            'armor': new Armor(this, 'Armor'),
+        };
+
         this.ownedAutoAttacks = [];
+        this.recalculateStats(); // 초기 스탯 계산
     }
 
     update(deltaTime, opponent) {
@@ -158,11 +179,21 @@ export class Player {
 
         if (keys['w']) this.skills['w']?.use(this.world, opponent, deltaTime);
         if (keys['e']) this.skills['e']?.use(this.world, opponent);
+        // 'r' 키는 패시브이므로 입력 처리 없음
     }
 
     releaseSkill(key, opponent) {
         this.skills[key]?.use(this.world, opponent);
         this.aimingSkillKey = null;
+    }
+
+    upgradeSkill(key) {
+        const skill = this.skills[key];
+        if (skill) {
+            skill.upgrade();
+            // 패시브 효과가 있는 스킬이 업그레이드되었을 수 있으므로 스탯을 다시 계산합니다.
+            this.recalculateStats();
+        }
     }
 
     handleAI(deltaTime, opponent) {
@@ -183,15 +214,15 @@ export class Player {
         } else { // Priority 2: Alternate between upgrading skills and sphere
             if (this.nextSkillToUpgrade % 2 === 0) { // Upgrade a skill
                 const skillKeys = Object.keys(this.skills);
+
                 if (skillKeys.length > 0) {
                     const keyToUpgrade = skillKeys[Math.floor(this.nextSkillToUpgrade / 2) % skillKeys.length];
-                    const skillToUpgrade = this.skills[keyToUpgrade];
-                    const cost = 10 + (skillToUpgrade.level - 1) * 15;
+                    const cost = 10 + (this.skills[keyToUpgrade].level - 1) * 15;
 
                     if (this.gold >= cost) {
                         if (this.spendGold(cost)) {
-                            skillToUpgrade.upgrade();
-                            console.log(`AI Upgraded ${skillToUpgrade.name} to level ${skillToUpgrade.level}`);
+                            this.upgradeSkill(keyToUpgrade);
+                            console.log(`AI Upgraded ${this.skills[keyToUpgrade].name} to level ${this.skills[keyToUpgrade].level}`);
                             this.nextSkillToUpgrade++;
                         }
                     }
@@ -525,15 +556,51 @@ export class Player {
     takeDamage(damage) {
         if (this.isInvincible) return; // 무적 상태일 때는 데미지를 받지 않음
 
-        this.hp -= damage;
-        console.log(`${this.name} took ${damage} damage, HP: ${this.hp}`);
+        const finalDamage = Math.max(1, damage - this.defense); // 최소 1의 데미지는 받도록 함
+        this.hp -= finalDamage;
+        console.log(`${this.name} took ${finalDamage} damage (Original: ${damage}), HP: ${this.hp}`);
     }
 
     applyStun(duration) {
+        if (this.isInvincible) return; // 무적 상태일 때는 스턴에 걸리지 않음
+
         this.stunTimer = Math.max(this.stunTimer, duration); // 기존 스턴이 더 길면 유지
     }
 
+    recalculateStats() {
+        const oldMaxHp = this.maxHp;
+        let newMaxHp = this.baseMaxHp;
+        const hpSkill = this.skills['r'];
+
+        if (hpSkill) {
+            // 패시브 스킬 레벨에 따라 추가 체력을 계산합니다. (기본 1레벨 포함)
+            const hpBonus = (hpSkill.level - 1) * hpSkill.hpPerLevel;
+            newMaxHp += hpBonus;
+        }
+
+        // Dash 스킬 레벨에 따라 기본 이동속도 증가
+        const dashSkill = this.skills['e'];
+        let speedBonus = 0;
+        if (dashSkill) {
+            speedBonus = (dashSkill.level - 1) * dashSkill.speedPerLevel;
+        }
+        this.baseSpeed = 200 + speedBonus;
+        // 버프 상태가 아니면 현재 속도도 업데이트
+        if (this.speedBuffTimer <= 0) this.speed = this.baseSpeed;
+
+        newMaxHp = Math.min(200, newMaxHp); // 최대 체력을 200으로 제한
+        const hpIncrease = newMaxHp - oldMaxHp;
+
+        this.maxHp = newMaxHp;
+        if (hpIncrease > 0) {
+            this.hp += hpIncrease; // 증가한 최대 체력만큼 현재 체력도 증가
+        }
+        this.hp = Math.min(this.hp, this.maxHp); // 안전장치: 현재 체력이 최대 체력을 넘지 않도록 함
+    }
+
     applyKnockback(directionX, directionY, force, duration) {
+        if (this.isInvincible) return; // 무적 상태일 때는 넉백에 걸리지 않음
+
         this.knockbackDirection.x = directionX;
         this.knockbackDirection.y = directionY;
         this.knockbackForce = force;
@@ -563,17 +630,12 @@ export class Player {
     }
 
     draw(ctx) {
-        // Draw health bar
-        const barWidth = 40;
-        const barHeight = 8;
-        const barX = this.x - barWidth / 2;
-        const barY = this.y - this.size / 2 - barHeight - 5;
-        const hpPercent = this.hp / this.maxHp;
-
-        ctx.fillStyle = '#333';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-        ctx.fillStyle = 'green';
-        ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
+        // Draw health text
+        const hpText = `${Math.round(this.hp)} / ${this.maxHp}`;
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(hpText, this.x, this.y - this.size / 2 - 8);
 
         // Draw character
         ctx.save();
@@ -605,8 +667,8 @@ export class Player {
     drawSkillUI(ctx) {
         const iconSize = 50;
         const padding = 10;
-        const numSkills = Object.keys(this.skills).length;
-        const skillsWidth = numSkills * (iconSize + padding) - padding;
+        const allSkills = Object.entries(this.skills); // 모든 스킬을 포함
+        const skillsWidth = allSkills.length * (iconSize + padding) - padding;
 
         let startX;
         let nameX, nameAlign;
@@ -635,21 +697,30 @@ export class Player {
 
         const startY = ctx.canvas.height - iconSize - 20;
 
-        Object.entries(this.skills).forEach(([key, skill], index) => {
+        allSkills.forEach(([key, skill], index) => { // 모든 스킬을 순회
             const x = startX + index * (iconSize + padding);
             const y = startY;
 
-            ctx.fillStyle = '#333';
+            // 아이콘 이미지 또는 기본 배경 그리기
+            const iconImage = loadImage(skill.icon);
+            if (iconImage && iconImage.complete && iconImage.naturalWidth !== 0) {
+                ctx.drawImage(iconImage, x, y, iconSize, iconSize);
+            } else {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(x, y, iconSize, iconSize);
+            }
+
             ctx.strokeStyle = skill.canUse() ? '#aaa' : '#888';
             ctx.lineWidth = 2;
-            ctx.fillRect(x, y, iconSize, iconSize);
             ctx.strokeRect(x, y, iconSize, iconSize);
 
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(key.toUpperCase(), x + iconSize - 5, y + iconSize - 5);
-
+            // 패시브 스킬이 아닐 때만 단축키를 그립니다.
+            if (!skill.isPassive) {
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(key.toUpperCase(), x + iconSize - 5, y + iconSize - 5);
+            }
             ctx.fillStyle = 'gold';
             ctx.font = 'bold 12px sans-serif';
             ctx.textAlign = 'left';

@@ -30,15 +30,15 @@ function renderShopContent(shopType) {
 
     switch (shopType) {
         case 'z':
-            title = '무기 상점';
-            content = getWeaponShopHTML();
+            title = '장비 상점';
+            content = getWeaponShopHTML() + getItemShopHTML(); // 무기와 방어구 HTML을 합침
             break;
         case 'x':
-            title = '스킬 업그레이드';
+            title = '스킬';
             content = getSkillShopHTML();
             break;
         case 'c':
-            title = '무기/스킬 조합';
+            title = '조합';
             content = '<p>조합 기능은 여기에 구현됩니다.</p>';
             break;
         default:
@@ -77,8 +77,23 @@ function renderShopContent(shopType) {
             const cost = 10 + (skill.level - 1) * 15;
 
             if (player.spendGold(cost)) {
-                skill.upgrade();
+                player.upgradeSkill(skillKey);
                 renderShopContent('x');
+                playerWorld.draw();
+            }
+        });
+    });
+
+    document.querySelectorAll('.upgrade-item-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const itemKey = e.target.dataset.itemKey;
+            const player = playerWorld.character;
+            const item = player.availableItems[itemKey];
+            const cost = 15 + item.level * 20;
+
+            if (player.spendGold(cost)) {
+                item.upgrade();
+                renderShopContent('z'); // 'c'에서 'z'로 변경하여 장비 상점을 새로고침
                 playerWorld.draw();
             }
         });
@@ -87,22 +102,66 @@ function renderShopContent(shopType) {
 
 function getWeaponShopHTML() {
     const player = playerWorld.character;
-    let html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
+    let html = '<h3>무기</h3><div style="display: flex; flex-direction: column; gap: 15px;">';
 
     for (const [key, weapon] of Object.entries(player.availableAutoAttacks)) {
         const cost = 25 + weapon.level * 25;
-        const buttonText = weapon.level === 0 ? `Buy (${cost} G)` : `Upgrade (${cost} G)`;
+        const nextLevelDescription = weapon.getNextLevelDescription ? weapon.getNextLevelDescription() : 'Max Level';
+        
+        let buttonHTML;
+        if (weapon.level >= 21) {
+            buttonHTML = `<span style="color: #888;">Max Level</span>`;
+        } else {
+            const buttonText = weapon.level === 0 ? `Buy (${cost} G)` : `Upgrade (${cost} G)`;
+            buttonHTML = `<button class="upgrade-weapon-btn" data-weapon-key="${key}" style="padding: 10px 15px; cursor: pointer;">${buttonText}</button>`;
+        }
+
         html += `
             <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h4 style="margin: 0 0 5px 0;">${weapon.name} (Lv. ${weapon.level})</h4>
                     <p style="margin: 0; font-size: 14px; color: #aaa;">
-                        ${weapon.level > 0 ? weapon.getDescription() : 'Not owned'}
+                        Current: ${weapon.level > 0 ? weapon.getDescription() : 'Not owned'}
+                        <br>
+                        <span style="color: lightgreen;">Next Lv: ${nextLevelDescription}</span>
                     </p>
                 </div>
-                <button class="upgrade-weapon-btn" data-weapon-key="${key}" style="padding: 10px 15px; cursor: pointer;">
-                    ${buttonText}
-                </button>
+                ${buttonHTML}
+            </div>
+        `;
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function getItemShopHTML() {
+    const player = playerWorld.character;
+    let html = '<h3 style="margin-top: 30px;">방어구</h3><div style="display: flex; flex-direction: column; gap: 15px;">';
+
+    for (const [key, item] of Object.entries(player.availableItems)) {
+        const cost = 15 + item.level * 20;
+        const nextLevelDescription = item.getNextLevelDescription ? item.getNextLevelDescription() : 'Max Level';
+
+        let buttonHTML;
+        if (item.level >= 21) {
+            buttonHTML = `<span style="color: #888;">Max Level</span>`;
+        } else {
+            const buttonText = item.level === 0 ? `Buy (${cost} G)` : `Upgrade (${cost} G)`;
+            buttonHTML = `<button class="upgrade-item-btn" data-item-key="${key}" style="padding: 10px 15px; cursor: pointer;">${buttonText}</button>`;
+        }
+
+        html += `
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h4 style="margin: 0 0 5px 0;">${item.name} (Lv. ${item.level})</h4>
+                    <p style="margin: 0; font-size: 14px; color: #aaa;">
+                        Current: ${item.level > 0 ? item.getDescription() : 'Not owned'}
+                        <br>
+                        <span style="color: lightgreen;">Next Lv: ${nextLevelDescription}</span>
+                    </p>
+                </div>
+                ${buttonHTML}
             </div>
         `;
     }
@@ -117,18 +176,26 @@ function getSkillShopHTML() {
 
     for (const [key, skill] of Object.entries(player.skills)) {
         const cost = 10 + (skill.level - 1) * 15;
+        const nextLevelDescription = skill.getNextLevelDescription ? skill.getNextLevelDescription() : 'Max Level';
+
+        let buttonHTML;
+        if (skill.level >= 21) {
+            buttonHTML = `<span style="color: #888;">Max Level</span>`;
+        } else {
+            buttonHTML = `<button class="upgrade-skill-btn" data-skill-key="${key}" style="padding: 10px 15px; cursor: pointer;">Upgrade (${cost} G)</button>`;
+        }
+
         html += `
             <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h4 style="margin: 0 0 5px 0;">${skill.name} (Lv. ${skill.level})</h4>
                     <p style="margin: 0; font-size: 14px; color: #aaa;">
-                        Damage: ${skill.damage || 'N/A'}
-                        ${skill.radius ? ` / Radius: ${skill.radius}` : ''}
+                        Current: ${skill.getDescription ? skill.getDescription() : 'No description'}
+                        <br>
+                        <span style="color: lightgreen;">Next Lv: ${nextLevelDescription}</span>
                     </p>
                 </div>
-                <button class="upgrade-skill-btn" data-skill-key="${key}" style="padding: 10px 15px; cursor: pointer;">
-                    Upgrade (${cost} G)
-                </button>
+                ${buttonHTML}
             </div>
         `;
     }

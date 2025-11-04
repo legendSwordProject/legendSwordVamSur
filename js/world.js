@@ -151,7 +151,7 @@ export class World {
                 const dx = projectile.x - target.x;
                 const dy = projectile.y - target.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < projectile.size + target.size / 2) {
+                if (distance < projectile.size + target.size / 2) { 
                     target.takeDamage(projectile.damage);
                     if (projectile.stunDuration > 0) {
                         target.applyStun(projectile.stunDuration);
@@ -200,7 +200,6 @@ export class World {
 
                             if (distance < 8 + target.size / 2) { // 8 is the sphere radius
                                 target.takeDamage(autoAttack.damage);
-                                target.applyStun(1.0); // 1초 스턴 효과 추가
                                 autoAttack.lastDamageTimestamp = performance.now();
                                 // 현재 구체는 하나의 대상만 공격하므로 내부 루프를 빠져나갑니다.
                                 // 하지만 다른 구체나 다른 캐릭터의 공격은 계속 검사해야 하므로 함수를 완전히 종료하지 않습니다.

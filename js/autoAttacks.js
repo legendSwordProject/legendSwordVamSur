@@ -31,7 +31,15 @@ export class OrbitingSphere extends AutoAttack {
     }
 
     getDescription() {
-        return `Spheres: ${this.spheres.length} / Damage: ${this.damage}`;
+        return `Spheres: ${this.spheres.length} / Damage: ${this.damage} / Rotation: ${this.rotationSpeed.toFixed(1)}`;
+    }
+
+    getNextLevelDescription() {
+        const nextDamage = 5 + this.level * 2;
+        const nextRadius = 60 + this.level * 5;
+        const nextSpheres = Math.min(this.level + 1, 6);
+        const nextRotationSpeed = 2 + this.level * 0.2;
+        return `Spheres: ${nextSpheres} / Dmg: ${nextDamage} / Radius: ${nextRadius.toFixed(0)} / Rotation: ${nextRotationSpeed.toFixed(1)}`;
     }
 
     updateStats() {
@@ -75,13 +83,22 @@ export class EightWayShot extends AutoAttack {
     constructor(owner) {
         super(owner, 'Eight-Way Shot');
         this.fireCooldown = 2.0; // 2초마다 발사
-        this.fireTimer = 0;
+        this.fireTimer = this.fireCooldown; // 구매 후 쿨타임이 지나야 첫 발사되도록 수정
         this.projectileSpeed = 250;
         this.updateStats();
     }
 
     getDescription() {
         return `Damage: ${this.damage} / Range: ${this.range.toFixed(1)}s`;
+    }
+
+    getNextLevelDescription() {
+        const nextDamage = 8 + this.level * 4;
+        const nextCalculatedLife = 1.0 + this.level * 0.05;
+        const maxDistance = this.owner.world.canvas.width / 4;
+        const maxLife = maxDistance / this.projectileSpeed;
+        const nextRange = Math.min(nextCalculatedLife, maxLife);
+        return `Damage: ${nextDamage} / Range: ${nextRange.toFixed(1)}s`;
     }
 
     updateStats() {

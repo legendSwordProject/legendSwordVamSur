@@ -7,6 +7,8 @@ class Skill {
         this.name = name;
         this.key = key;
         this.level = 1;
+        this.icon = null; // 아이콘 이미지 경로
+        this.isPassive = false;
         this.currentCooldown = 0;
     }
 
@@ -46,17 +48,28 @@ export class AoeSkill extends Skill {
         this.baseDamage = damage;
         this.baseRadius = radius;
         this.color = owner.isPlayerControlled ? 'rgba(135, 206, 250, 0.7)' : 'rgba(255, 99, 71, 0.7)'; // Player: skyblue, AI: tomato
+        this.icon = 'img/blast.svg';
         this.updateStats();
     }
 
     updateStats() {
         this.damage = this.baseDamage + (this.level - 1) * 5;
-        this.radius = this.baseRadius + (this.level - 1) * 2;
+        this.radius = this.baseRadius + (this.level - 1) * 2.5;
     }
 
     upgrade() {
         super.upgrade();
         this.updateStats();
+    }
+
+    getNextLevelDescription() {
+        const nextDamage = this.baseDamage + this.level * 5;
+        const nextRadius = this.baseRadius + this.level * 2.5;
+        return `Damage: ${nextDamage} / Radius: ${nextRadius}`;
+    }
+
+    getDescription() {
+        return `Damage: ${this.damage} / Radius: ${this.radius}`;
     }
 
     use(world, opponent = null) {
@@ -84,19 +97,32 @@ export class ProjectileSkill extends Skill {
     constructor(owner, cooldown, key, name, projectileSpeed, damage) {
         super(owner, cooldown, key, name);
         this.baseDamage = damage;
-        this.projectileSpeed = projectileSpeed;
+        this.baseProjectileSpeed = projectileSpeed; // 기본 속도 저장
+        this.projectileSpeed = this.baseProjectileSpeed;
         this.stunDuration = 0.2; // 0.2초 스턴
         this.color = owner.isPlayerControlled ? 'lightgreen' : 'lightcoral'; // Player: lightgreen, AI: lightcoral
+        this.icon = 'img/shot.svg';
         this.updateStats();
     }
 
     updateStats() {
         this.damage = this.baseDamage + (this.level - 1) * 3;
+        this.projectileSpeed = this.baseProjectileSpeed + (this.level - 1) * 20; // 레벨당 속도 20 증가
     }
 
     upgrade() {
         super.upgrade();
         this.updateStats();
+    }
+
+    getDescription() {
+        return `Damage: ${this.damage} / Speed: ${this.projectileSpeed}`;
+    }
+
+    getNextLevelDescription() {
+        const nextDamage = this.baseDamage + this.level * 3;
+        const nextSpeed = this.baseProjectileSpeed + this.level * 20;
+        return `Damage: ${nextDamage} / Speed: ${nextSpeed}`;
     }
 
     use(world, opponent = null, deltaTime = 0) {
@@ -135,7 +161,9 @@ export class DashSkill extends Skill {
         this.dashSpeed = dashSpeed;
         this.dashDuration = dashDuration;
         this.damage = 0; // 대쉬 스킬은 데미지가 없습니다.
+        this.icon = 'img/dash.svg';
         this.baseCooldown = cooldown;
+        this.speedPerLevel = 15; // 레벨당 기본 이동속도 10 증가
     }
 
     updateStats() {
@@ -149,6 +177,17 @@ export class DashSkill extends Skill {
         this.updateStats();
     }
 
+    getDescription() {
+        const speedBonus = (this.level - 1) * this.speedPerLevel;
+        return `Cooldown: ${this.cooldown.toFixed(1)}s / Move Speed: +${speedBonus}`;
+    }
+
+    getNextLevelDescription() {
+        const nextCooldownReduction = this.level * 0.5;
+        const nextCooldown = Math.max(3, this.baseCooldown - nextCooldownReduction);
+        return `Cooldown: ${nextCooldown.toFixed(1)}s / Move Speed: +${this.level * this.speedPerLevel}`;
+    }
+
     use(world, opponent = null, deltaTime = 0) {
         if (super.use()) {
             // 스킬은 캐릭터의 대쉬 상태를 활성화시키는 역할만 합니다.
@@ -157,5 +196,45 @@ export class DashSkill extends Skill {
             return true;
         }
         return false;
+    }
+}
+
+export class PassiveHpSkill extends Skill {
+    constructor(owner, key, name, hpPerLevel) {
+        super(owner, 0, key, name); // 패시브 스킬은 쿨타임이 없습니다.
+        this.hpPerLevel = hpPerLevel;
+        this.damage = 0;
+        this.icon = 'img/toughness.svg';
+        this.isPassive = true;
+    }
+
+    updateStats() {
+        // 스탯 변경 시, 소유자(Player)가 자신의 스탯을 다시 계산하도록 요청합니다.
+    }
+
+    upgrade() {
+        super.upgrade();
+        this.updateStats();
+    }
+
+    getDescription() {
+        const hpBonus = (this.level - 1) * this.hpPerLevel;
+        return `HP Bonus: +${hpBonus}`;
+    }
+
+    getNextLevelDescription() {
+        const nextHpBonus = this.level * this.hpPerLevel;
+        return `HP Bonus: +${nextHpBonus}`;
+    }
+
+    // 패시브 스킬은 사용 불가
+    use() {
+        console.log("This is a passive skill and cannot be used.");
+        return false;
+    }
+
+    // 패시브 스킬은 쿨타임이 없음
+    getCooldownProgress() {
+        return 0;
     }
 }
