@@ -1,6 +1,7 @@
 export class Enemy {
     constructor(x, y, size, speed, color, hp) {
         this.x = x; this.y = y; this.size = size; this.speed = speed; this.color = color; this.maxHp = hp; this.hp = hp;
+        this.image = new Image(); this.image.src = 'img/enemy.svg';
         this.stunTimer = 0;
         this.knockbackTimer = 0;
         this.knockbackForce = 0;
@@ -52,8 +53,12 @@ export class Enemy {
     }
 
     draw(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        if (this.image && this.image.complete) {
+            ctx.drawImage(this.image, this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        } else {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        }
 
         if (this.hp < this.maxHp) {
             const barWidth = this.size;

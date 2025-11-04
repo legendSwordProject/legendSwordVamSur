@@ -33,11 +33,11 @@ class Skill {
 
     use() {
         if (this.canUse()) {
-            console.log(`Using skill on key: ${this.key}`);
+            // console.log(`Using skill on key: ${this.key}`);
             this.currentCooldown = this.cooldown;
             return true;
         }
-        console.log(`Skill ${this.key} is on cooldown.`);
+        // console.log(`Skill ${this.key} is on cooldown.`);
         return false;
     }
 }
@@ -229,7 +229,7 @@ export class PassiveHpSkill extends Skill {
 
     // 패시브 스킬은 사용 불가
     use() {
-        console.log("This is a passive skill and cannot be used.");
+        // console.log("This is a passive skill and cannot be used.");
         return false;
     }
 

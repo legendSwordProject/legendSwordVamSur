@@ -28,6 +28,7 @@ export class OrbitingSphere extends AutoAttack {
         this.damageCooldown = 0.5; // Can only deal damage once every 0.5 seconds
         this.lastDamageTimestamp = 0;
         this.updateStats();
+        this.image = new Image(); this.image.src = 'img/orbiting_sphere.svg';
     }
 
     getDescription() {
@@ -68,14 +69,17 @@ export class OrbitingSphere extends AutoAttack {
     }
 
     draw(ctx) {
-        ctx.fillStyle = 'magenta';
-        this.spheres.forEach(sphere => {
-            const x = this.owner.x + Math.cos(sphere.angle) * this.orbitRadius;
-            const y = this.owner.y + Math.sin(sphere.angle) * this.orbitRadius;
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fill();
-        });
+        if (this.image && this.image.complete) {
+            this.spheres.forEach(sphere => {
+                const sphereSize = 16;
+                const x = this.owner.x + Math.cos(sphere.angle) * this.orbitRadius;
+                const y = this.owner.y + Math.sin(sphere.angle) * this.orbitRadius;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.drawImage(this.image, -sphereSize / 2, -sphereSize / 2, sphereSize, sphereSize);
+                ctx.restore();
+            });
+        }
     }
 }
 

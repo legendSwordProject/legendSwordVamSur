@@ -6,6 +6,7 @@ export class Projectile {
         this.damage = damage;
         this.collided = false;
         this.owner = owner;
+        this.image = new Image(); this.image.src = 'img/eight_way_shot.svg';
         this.life = life; // in seconds
         this.stunDuration = stunDuration;
         this.knockback = knockback; // { force, duration }
@@ -22,10 +23,12 @@ export class Projectile {
     }
 
     draw(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
+        if (this.image && this.image.complete) {
+            ctx.drawImage(this.image, this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+        } else {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        }
     }
 }
 

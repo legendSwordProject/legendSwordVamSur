@@ -19,7 +19,7 @@ export class Player {
     constructor(x, y, color, world, name) {
         this.x = x;
         this.y = y;
-        this.size = 20;
+        this.size = 40; // 캐릭터의 기본 크기를 40으로 증가
         this.baseSpeed = 200;
         this.speed = this.baseSpeed;
         this.color = color;
@@ -27,6 +27,7 @@ export class Player {
         this.name = name;
         this.isPlayerControlled = world.isPlayerWorld; // 자신이 플레이어인지 기억
 
+        this.image = loadImage(this.isPlayerControlled ? 'img/player.svg' : 'img/ai.svg');
         this.baseMaxHp = 100;
         this.maxHp = this.baseMaxHp;
         this.hp = this.maxHp;
@@ -52,6 +53,7 @@ export class Player {
         this.aiAimingTimer = 0; // AI가 스킬을 조준하는 시간
         this.gold = 0;
         this.nextSkillToUpgrade = 0;
+        this.wonRounds = []; // 승리한 라운드 번호 배열
 
         this.skills = {
             'q': new AoeSkill(this, 5, 'Q', 'Blast', 100, 10),
@@ -208,7 +210,7 @@ export class Player {
                 if (this.spendGold(sphereCost)) {
                     orbitingSphere.upgrade();
                     this.ownedAutoAttacks.push(orbitingSphere);
-                    console.log(`AI Purchased ${orbitingSphere.name}`);
+                    // console.log(`AI Purchased ${orbitingSphere.name}`);
                 }
             }
         } else { // Priority 2: Alternate between upgrading skills and sphere
@@ -222,7 +224,7 @@ export class Player {
                     if (this.gold >= cost) {
                         if (this.spendGold(cost)) {
                             this.upgradeSkill(keyToUpgrade);
-                            console.log(`AI Upgraded ${this.skills[keyToUpgrade].name} to level ${this.skills[keyToUpgrade].level}`);
+                            // console.log(`AI Upgraded ${this.skills[keyToUpgrade].name} to level ${this.skills[keyToUpgrade].level}`);
                             this.nextSkillToUpgrade++;
                         }
                     }
@@ -231,7 +233,7 @@ export class Player {
                 if (this.gold >= sphereCost) {
                     if (this.spendGold(sphereCost)) {
                         orbitingSphere.upgrade();
-                        console.log(`AI Upgraded ${orbitingSphere.name} to level ${orbitingSphere.level}`);
+                        // console.log(`AI Upgraded ${orbitingSphere.name} to level ${orbitingSphere.level}`);
                         this.nextSkillToUpgrade++;
                     }
                 }
@@ -558,7 +560,7 @@ export class Player {
 
         const finalDamage = Math.max(1, damage - this.defense); // 최소 1의 데미지는 받도록 함
         this.hp -= finalDamage;
-        console.log(`${this.name} took ${finalDamage} damage (Original: ${damage}), HP: ${this.hp}`);
+        // console.log(`${this.name} took ${finalDamage} damage (Original: ${damage}), HP: ${this.hp}`);
     }
 
     applyStun(duration) {
@@ -642,10 +644,12 @@ export class Player {
         if (this.isInvincible) {
             ctx.globalAlpha = 0.5; // 무적 상태일 때 반투명 처리
         }
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-        ctx.fill();
+        if (this.image && this.image.complete) {
+            ctx.drawImage(this.image, this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        } else {
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        }
         ctx.restore();
 
         // Draw skill aiming indicator
@@ -749,6 +753,17 @@ export class Player {
         ctx.font = 'bold 18px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(this.name, nameX, 30);
+
+        // Draw Win Icons
+        const winIcon = '★';
+        const totalRounds = 5; // 총 5개의 별을 표시
+        const iconSpacing = 20;
+        const totalWinIconWidth = totalRounds * iconSpacing;
+        const winIconStartX = nameX - totalWinIconWidth / 2 + iconSpacing / 2;
+        for (let i = 0; i < totalRounds; i++) {
+            ctx.fillStyle = this.wonRounds.includes(i + 1) ? 'gold' : '#555'; // 해당 라운드에서 승리했으면 노란색
+            ctx.fillText(winIcon, winIconStartX + i * iconSpacing, 55);
+        }
 
         // Draw Phase Timer
         if (gameState.phase === 'laning') {

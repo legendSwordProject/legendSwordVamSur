@@ -151,7 +151,7 @@ export class World {
                 const dx = projectile.x - target.x;
                 const dy = projectile.y - target.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < projectile.size + target.size / 2) { 
+                if (distance < projectile.size / 2 + target.size / 2) { // 투사체 반지름 + 타겟 반지름
                     target.takeDamage(projectile.damage);
                     if (projectile.stunDuration > 0) {
                         target.applyStun(projectile.stunDuration);
@@ -197,8 +197,8 @@ export class World {
                             const dx = sphereX - target.x;
                             const dy = sphereY - target.y;
                             const distance = Math.sqrt(dx * dx + dy * dy);
-
-                            if (distance < 8 + target.size / 2) { // 8 is the sphere radius
+                            // Orbiting Sphere의 구체 반지름은 8
+                            if (distance < 8 + target.size / 2) { // 구체 반지름 + 타겟 반지름
                                 target.takeDamage(autoAttack.damage);
                                 autoAttack.lastDamageTimestamp = performance.now();
                                 // 현재 구체는 하나의 대상만 공격하므로 내부 루프를 빠져나갑니다.
