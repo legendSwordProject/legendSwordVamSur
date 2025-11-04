@@ -1,5 +1,6 @@
 import { World } from './world.js';
 import { Obstacle } from './entities.js';
+import { Player } from './player.js';
 import { toggleShop } from './ui.js';
 
 // --- 1. Setup ---
@@ -14,7 +15,7 @@ const titleScreen = document.getElementById('title-screen');
 const nameInputScreen = document.getElementById('name-input-screen');
 const playerNameInput = document.getElementById('player-name-input');
 const factionSelectScreen = document.getElementById('faction-select-screen');
-const startGameButton = document.getElementById('start-game-button');
+// const startGameButton = document.getElementById('start-game-button');
 const factionButtons = document.querySelectorAll('.faction-button');
 
 export const gameState = {
@@ -22,19 +23,12 @@ export const gameState = {
     isGameRunning: false,
     phase: 'laning', // 'laning' or 'dueling'
     phaseTimer: 1, // 1초로 변경하여 즉시 결투장으로 이동
-    currentRound: 1,
+    currentRound: 1, // 현재 라운드
 };
 export const keys = {}; // Global state for keyboard input
-export const mouse = { x: 0, y: 0 }; // Global state for mouse position
 
 let playerName = "Player"; // Default name
 
-// --- Event Listeners ---
-playerCanvas.addEventListener('mousemove', (e) => {
-    const rect = playerCanvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
 document.addEventListener('keydown', (e) => {
     if (!e.key) return;
     keys[e.key.toLowerCase()] = true;
@@ -58,12 +52,12 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-startGameButton.addEventListener('click', () => {
-    titleScreen.classList.add('hidden');
-    nameInputScreen.classList.remove('hidden');
-    factionSelectScreen.classList.remove('hidden');
-    playerNameInput.focus();
-});
+// startGameButton.addEventListener('click', () => {
+//     titleScreen.classList.add('hidden');
+//     nameInputScreen.classList.remove('hidden');
+//     factionSelectScreen.classList.remove('hidden');
+//     playerNameInput.focus();
+// });
 
 factionButtons.forEach(button => {
     button.addEventListener('click', (e) => {
@@ -115,12 +109,11 @@ function gameLoop(timestamp) {
                 winner.wonRounds.push(gameState.currentRound);
                 gameState.currentRound++;
                 // console.log(`${winner.name} has won round ${gameState.currentRound - 1}!`);
-                defeatedCharacter.respawnTimer = 10; // 패배자만 10초 리스폰 타이머 설정
 
-                if (winner.wonRounds.length >= 3) {
+                if (winner.wonRounds.length >= 3) { // 5선승제로 변경
                     endGame(winner);
                 } else {
-                    transitionToLaning(); // 즉시 본진으로 이동
+                    prepareNextRound(); // 다음 라운드 준비
                 }
             }
         }
@@ -191,28 +184,30 @@ function transitionToDuel() {
     aiWorld.enemies = [];
 }
 
-function transitionToLaning() {
-    // console.log("Transitioning back to Laning Phase!");
+function prepareNextRound() {
+    console.log(`Preparing for Round ${gameState.currentRound}`);
     gameState.phase = 'laning';
-    gameState.phaseTimer = 120; // 타이머 리셋
+    gameState.phaseTimer = 30; // 30초 준비 시간
 
     // 캔버스 가시성 복구
     duelContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
 
-    // 각 캐릭터를 원래 월드로 복귀
+
     playerWorld.character.world = playerWorld;
     aiWorld.character.world = aiWorld;
+    
+    // 체력과 위치를 명시적으로 초기화합니다.
+    playerWorld.character.hp = playerWorld.character.maxHp;
+    aiWorld.character.hp = aiWorld.character.maxHp;
+    playerWorld.character.x = playerCanvas.width / 2;
+    playerWorld.character.y = playerCanvas.height / 2;
+    aiWorld.character.x = aiCanvas.width / 2;
+    aiWorld.character.y = aiCanvas.height / 2;
 
-    // 두 캐릭터 모두 체력을 최대로 회복합니다.
-    // 패배한 캐릭터의 리스폰 타이머는 gameLoop에서 설정되어 유지됩니다.
-    playerWorld.character.reset();
-    aiWorld.character.reset();
-
-    // 두 캐릭터 모두 위치는 중앙으로 재설정
-    playerWorld.character.x = playerWorld.canvas.width / 2;
-    aiWorld.character.x = aiWorld.canvas.width / 2;
-
+    // 다음 라운드를 위해 3000 골드를 지급합니다.
+    playerWorld.character.addGold(3000);
+    aiWorld.character.addGold(3000);
 }
 
 function startGame() {
@@ -220,6 +215,9 @@ function startGame() {
     playerWorld = new World(playerCanvas, true, playerName);
     aiWorld = new World(aiCanvas, false, "AI Opponent");
     lastTime = performance.now();
+    gameState.phaseTimer = 30; // 30초 준비 시간
+    playerWorld.character.addGold(3000);
+    aiWorld.character.addGold(3000);
 
     // 개발자 콘솔에서 쉽게 접근하기 위해 window 객체에 할당합니다.
     window.playerWorld = playerWorld;
@@ -238,7 +236,6 @@ function endGame(winner) {
     // 승리 오버레이 생성
     const victoryOverlay = document.createElement('div');
     victoryOverlay.id = 'victory-overlay';
-    victoryOverlay.className = 'opening-overlay'; // opening-overlay의 스타일 재사용
     victoryOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
     victoryOverlay.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
@@ -263,21 +260,21 @@ function resetGame() {
     gameState.isPaused = false;
     gameState.isGameRunning = false;
     gameState.phase = 'laning';
-    gameState.phaseTimer = 1;
     gameState.currentRound = 1;
+    gameState.phaseTimer = 1;
 
     // 캐릭터 및 월드 객체 초기화 (새로 생성)
     playerWorld = null;
     aiWorld = null;
     duelWorld = null;
 
-    // UI 초기화 (필요하다면)
+    // UI 초기화 및 시작 화면 표시
     gameContainer.classList.remove('hidden');
     duelContainer.classList.add('hidden');
-
-    // 시작 화면으로 돌아가거나 바로 게임 시작
-    // 여기서는 바로 게임을 다시 시작하도록 합니다.
-    startGame();
+    openingOverlay.classList.remove('hidden');
+    titleScreen.classList.remove('hidden');
+    nameInputScreen.classList.add('hidden');
+    factionSelectScreen.classList.add('hidden');
 }
 
 requestAnimationFrame(gameLoop);

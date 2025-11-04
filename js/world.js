@@ -118,6 +118,21 @@ export class World {
             this.character.ownedAutoAttacks.forEach(aa => aa.draw(this.ctx));
             this.character.draw(this.ctx);
             this.character.drawSkillUI(this.ctx);
+
+            // 본진 대기 화면 안내 문구
+            if (this.isPlayerWorld) {
+                this.ctx.save();
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                this.ctx.textAlign = 'center';
+                this.ctx.font = '18px sans-serif';
+
+                this.ctx.fillText("30초 동안 장비를 구매하고 결투를 준비하세요!", this.canvas.width / 2, this.canvas.height / 2 - 60);
+                this.ctx.font = 'bold 16px sans-serif';
+                this.ctx.fillText("Z: 장비 상점 / X: 스킬 상점", this.canvas.width / 2, this.canvas.height / 2 - 30);
+                this.ctx.fillText("Q, W, E: 스킬 사용 / ←↑→↓: 이동", this.canvas.width / 2, this.canvas.height / 2);
+
+                this.ctx.restore();
+            }
         }
     }
 

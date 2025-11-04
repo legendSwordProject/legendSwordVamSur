@@ -416,12 +416,7 @@ export class Player {
             if (keys['arrowdown']) dirY += 1;
             if (keys['arrowleft']) dirX -= 1;
             if (keys['arrowright']) dirX += 1;
-
-            // 이동 입력이 없으면 마우스 커서 방향으로 대쉬
-            if (dirX === 0 && dirY === 0) {
-                dirX = mouse.x - this.x;
-                dirY = mouse.y - this.y;
-            }
+            
         } else {
             // AI는 현재 이동 방향으로 대쉬 (handleAI에서 계산된 방향)
             // handleAI에서 계산된 moveX, moveY를 사용합니다.
@@ -612,11 +607,6 @@ export class Player {
 
     isDead() {
         return this.hp <= 0;
-    }
-
-    reset() {
-        this.hp = this.maxHp;
-        // 위치는 각 페이즈 전환 시 설정
     }
 
     addGold(amount) {
