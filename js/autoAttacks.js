@@ -36,8 +36,8 @@ export class OrbitingSphere extends AutoAttack {
     }
 
     getNextLevelDescription() {
-        const nextDamage = 5 + this.level * 2;
-        const nextRadius = 60 + this.level * 5;
+        const nextDamage = 5 + this.level * 5;
+        const nextRadius = 60 + this.level * 4;
         const nextSpheres = Math.min(this.level + 1, 6);
         const nextRotationSpeed = 2 + this.level * 0.2;
         return `Spheres: ${nextSpheres} / Dmg: ${nextDamage} / Radius: ${nextRadius.toFixed(0)} / Rotation: ${nextRotationSpeed.toFixed(1)}`;
@@ -45,8 +45,8 @@ export class OrbitingSphere extends AutoAttack {
 
     updateStats() {
         // 레벨에 따라 데미지는 항상 증가합니다.
-        this.damage = 5 + (this.level - 1) * 2;
-        this.orbitRadius = 60 + (this.level - 1) * 5;
+        this.damage = 5 + (this.level - 1) * 5;
+        this.orbitRadius = 60 + (this.level - 1) * 4;
         this.rotationSpeed = 2 + (this.level - 1) * 0.2;
 
         const maxSpheres = 6;

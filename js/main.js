@@ -207,7 +207,7 @@ function prepareNextRound() {
 
     // 다음 라운드를 위해 3000 골드를 지급합니다.
     playerWorld.character.addGold(3000);
-    aiWorld.character.addGold(3000);
+    aiWorld.character.addGold(5000);
 }
 
 function startGame() {

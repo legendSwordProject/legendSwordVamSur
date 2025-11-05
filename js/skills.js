@@ -53,8 +53,8 @@ export class AoeSkill extends Skill {
     }
 
     updateStats() {
-        this.damage = this.baseDamage + (this.level - 1) * 5;
-        this.radius = this.baseRadius + (this.level - 1) * 2.5;
+        this.damage = this.baseDamage + (this.level - 1) * 3;
+        this.radius = this.baseRadius + (this.level - 1) * 1.5;
     }
 
     upgrade() {
@@ -63,8 +63,8 @@ export class AoeSkill extends Skill {
     }
 
     getNextLevelDescription() {
-        const nextDamage = this.baseDamage + this.level * 5;
-        const nextRadius = this.baseRadius + this.level * 2.5;
+        const nextDamage = this.baseDamage + this.level * 3;
+        const nextRadius = this.baseRadius + this.level * 1.5;
         return `Damage: ${nextDamage} / Radius: ${nextRadius}`;
     }
 
@@ -106,8 +106,8 @@ export class ProjectileSkill extends Skill {
     }
 
     updateStats() {
-        this.damage = this.baseDamage + (this.level - 1) * 3;
-        this.projectileSpeed = this.baseProjectileSpeed + (this.level - 1) * 20; // 레벨당 속도 20 증가
+        this.damage = this.baseDamage + (this.level - 1) * 5;
+        this.projectileSpeed = this.baseProjectileSpeed + (this.level - 1) * 30; // 레벨당 속도 20 증가
     }
 
     upgrade() {
@@ -120,8 +120,8 @@ export class ProjectileSkill extends Skill {
     }
 
     getNextLevelDescription() {
-        const nextDamage = this.baseDamage + this.level * 3;
-        const nextSpeed = this.baseProjectileSpeed + this.level * 20;
+        const nextDamage = this.baseDamage + this.level * 5;
+        const nextSpeed = this.baseProjectileSpeed + this.level * 30;
         return `Damage: ${nextDamage} / Speed: ${nextSpeed}`;
     }
 
@@ -163,7 +163,7 @@ export class DashSkill extends Skill {
         this.damage = 0; // 대쉬 스킬은 데미지가 없습니다.
         this.icon = 'img/dash.svg';
         this.baseCooldown = cooldown;
-        this.speedPerLevel = 15; // 레벨당 기본 이동속도 10 증가
+        this.speedPerLevel = 20; // 레벨당 기본 이동속도 10 증가
     }
 
     updateStats() {
